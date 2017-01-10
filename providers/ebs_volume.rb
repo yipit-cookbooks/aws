@@ -177,17 +177,15 @@ def create_volume(snapshot_id, size, availability_zone, timeout, volume_type, pi
     Timeout::timeout(timeout) do
       while true
         vol = volume_by_id(nv[:aws_id])
-        if vol && vol[:aws_status] != "deleting"
+        if vol
           if ["in-use", "available"].include?(vol[:aws_status])
             Chef::Log.info("Volume #{nv[:aws_id]} is available")
             break
           else
             Chef::Log.debug("Volume is #{vol[:aws_status]}")
           end
-          sleep 3
-        else
-          raise "Volume #{nv[:aws_id]} no longer exists"
         end
+        sleep 3
       end
     end
   rescue Timeout::Error
@@ -207,7 +205,7 @@ def attach_volume(volume_id, instance_id, device, timeout)
     Timeout::timeout(timeout) do
       while true
         vol = volume_by_id(volume_id)
-        if vol && vol[:aws_status] != "deleting"
+        if vol
           if vol[:aws_attachment_status] == "attached"
             if vol[:aws_instance_id] == instance_id
               Chef::Log.info("Volume #{volume_id} is attached to #{instance_id}")
@@ -218,10 +216,8 @@ def attach_volume(volume_id, instance_id, device, timeout)
           else
             Chef::Log.debug("Volume is #{vol[:aws_status]}")
           end
-          sleep 3
-        else
-          raise "Volume #{volume_id} no longer exists"
         end
+        sleep 3
       end
     end
   rescue Timeout::Error
